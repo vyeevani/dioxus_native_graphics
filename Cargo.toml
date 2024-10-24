@@ -7,3 +7,7 @@ edition = "2021"
 ouroboros = "*"
 wgpu = "0.19"
 dioxus = {git="https://github.com/vyeevani/dioxus.git", features=["desktop"]}
+three-d = "*"
+glutin = "*"
+raw-window-handle = "*"
+tokio = "*"
