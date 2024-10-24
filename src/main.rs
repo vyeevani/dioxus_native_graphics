@@ -6,8 +6,9 @@ use dioxus::desktop::tao::window::WindowBuilder;
 use dioxus::desktop::{use_window, use_wry_event_handler, window};
 use dioxus::prelude::*;
 use crate::manganis;
-use three_d::SurfaceSettings;
-use three_d::{Geometry, Camera, OrbitControl, Viewport, vec3, degrees, ColorMaterial, Mesh, Gm, Srgba, Mat4, CpuMesh, radians, RenderTarget, ClearState};
+use three_d::{
+    degrees, radians, vec3, AmbientLight, Camera, ClearState, CpuModel, Geometry, Light, Mat4, OrbitControl, RenderTarget, Srgba, SurfaceSettings, Viewport, PhysicalMaterial, Model, ModelPart
+};
 
 // Urls are relative to your Cargo.toml file
 const _TAILWIND_URL: &str = manganis::mg!(file("public/tailwind.css"));
@@ -25,7 +26,8 @@ struct GraphicsResources {
     context: windowed_context::WindowedContext,
     camera: Camera,
     control: OrbitControl,
-    model: Gm<Mesh, ColorMaterial>,
+    model: ModelPart<PhysicalMaterial>,
+    lights: Vec<Box<dyn Light>>,
     time_since_start: Instant,
 }
 
@@ -47,20 +49,24 @@ fn app() -> Element {
         );
         let control = OrbitControl::new(*camera.target(), 1.0, 100.0);
 
-        // Create model
-        let mut model = Gm::new(
-            Mesh::new(&context, &CpuMesh::cube()),
-            ColorMaterial {
-                color: Srgba::GREEN,
-                ..Default::default()
-            },
-        );
-        model.set_animation(|time| Mat4::from_angle_y(radians(time * 0.0005)));
+        let mut cpu_model: CpuModel = three_d_asset::io::load_and_deserialize("DamagedHelmet.glb").unwrap();
+        cpu_model
+            .geometries
+            .iter_mut()
+            .for_each(|m| m.compute_tangents());
+        let mut model = Model::<PhysicalMaterial>::new(&context, &cpu_model)
+            .unwrap()
+            .remove(0);
+        model.set_animation(|time| Mat4::from_angle_z(radians(time * 0.0005)));
+
+        let lights: Vec<Box<dyn Light>> = vec![Box::new(AmbientLight::new(&context, 1.0, Srgba::WHITE))];
+
         GraphicsResources {
             context,
             camera,
             control,
             model,
+            lights,
             time_since_start: Instant::now(),
         }
     });
@@ -92,8 +98,12 @@ fn app() -> Element {
                     let viewport = Viewport { x: 0, y: 0, width: window.inner_size().width, height: window.inner_size().height};
                     graphics_resources.camera.set_viewport(viewport);
                     RenderTarget::screen(&graphics_resources.context, viewport.width, viewport.height)
-                        .clear(ClearState::color_and_depth(0.8, 0.8, 0.8, 1.0, 1.0))
-                        .render(&graphics_resources.camera, &graphics_resources.model, &[]);
+                        .clear(ClearState::color_and_depth(0.0, 0.0, 0.0, 1.0, 1.0))
+                        .render(
+                            &graphics_resources.camera, 
+                            &graphics_resources.model, 
+                            graphics_resources.lights.iter().map(|light| light.as_ref()).collect::<Vec<_>>().as_slice()
+                        );
                     graphics_resources.context.swap_buffers().unwrap();
                 })
             }

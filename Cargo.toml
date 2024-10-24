@@ -11,3 +11,4 @@ three-d = "*"
 glutin = "*"
 raw-window-handle = "*"
 tokio = "*"
+three-d-asset = {version="*", features=["gltf", "hdr", "jpeg", "http"]}
