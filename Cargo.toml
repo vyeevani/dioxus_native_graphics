@@ -1,0 +1,9 @@
+[package]
+name = "dioxus-three-d"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ouroboros = "*"
+wgpu = "0.19"
+dioxus = {git="https://github.com/vyeevani/dioxus.git", features=["desktop"]}
