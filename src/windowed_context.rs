@@ -130,7 +130,7 @@ impl WindowedContext {
     }
 
     /// Make this context current. Needed when using multiple windows (contexts) on native.
-    pub fn make_current(&self) -> Result<(), WindowError> {
+    pub fn _make_current(&self) -> Result<(), WindowError> {
         Ok(self.glutin_context.make_current(&self.surface)?)
     }
 
@@ -140,7 +140,7 @@ impl WindowedContext {
     }
 
     /// Enables or disabled vsync.
-    pub fn set_vsync(&self, enabled: bool) -> Result<(), WindowError> {
+    pub fn _set_vsync(&self, enabled: bool) -> Result<(), WindowError> {
         let swap_interval = if enabled {
             glutin::surface::SwapInterval::Wait(std::num::NonZeroU32::new(1).unwrap())
         } else {

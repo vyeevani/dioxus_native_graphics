@@ -3,14 +3,11 @@ mod windowed_context;
 use std::time::Instant;
 use dioxus::desktop::tao::event::Event as WryEvent;
 use dioxus::desktop::tao::window::WindowBuilder;
-use dioxus::desktop::{use_window, use_wry_event_handler, window, DesktopContext};
+use dioxus::desktop::{use_window, use_wry_event_handler, window};
 use dioxus::prelude::*;
-use ouroboros::self_referencing;
-use std::borrow::Cow;
-use wgpu;
 use crate::manganis;
 use three_d::SurfaceSettings;
-use three_d::{Geometry, FrameInput, Camera, OrbitControl, Model, Viewport, vec3, degrees, ColorMaterial, Mesh, Gm, Srgba, Mat4, CpuMesh, radians, RenderTarget, ClearState};
+use three_d::{Geometry, Camera, OrbitControl, Viewport, vec3, degrees, ColorMaterial, Mesh, Gm, Srgba, Mat4, CpuMesh, radians, RenderTarget, ClearState};
 
 // Urls are relative to your Cargo.toml file
 const _TAILWIND_URL: &str = manganis::mg!(file("public/tailwind.css"));
@@ -39,7 +36,7 @@ fn app() -> Element {
         let window = &desktop_context.window;
         let context = windowed_context::WindowedContext::from_tao_window(window, SurfaceSettings::default()).unwrap();
         // Create camera
-        let mut camera = Camera::new_perspective(
+        let camera = Camera::new_perspective(
             Viewport::new_at_origo(1, 1),
             vec3(0.0, 2.0, 4.0),
             vec3(0.0, 0.0, 0.0),
@@ -48,7 +45,7 @@ fn app() -> Element {
             0.1,
             10.0,
         );
-        let mut control = OrbitControl::new(*camera.target(), 1.0, 100.0);
+        let control = OrbitControl::new(*camera.target(), 1.0, 100.0);
 
         // Create model
         let mut model = Gm::new(
@@ -81,16 +78,18 @@ fn app() -> Element {
         match event {
             WryEvent::RedrawRequested(_id) => {}
             WryEvent::WindowEvent {
-                event: dioxus::desktop::tao::event::WindowEvent::Resized(_new_size),
+                event: dioxus::desktop::tao::event::WindowEvent::Resized(size),
                 ..
-            } => {}
+            } => {
+                graphics_resources.with_mut(|graphics_resources| graphics_resources.context.resize(*size));
+            }
             WryEvent::MainEventsCleared => {
                 let window = &desktop_context.window;
                 graphics_resources.with_mut(|graphics_resources| {
                     let mut events = Vec::new();
                     graphics_resources.control.handle_events(&mut graphics_resources.camera, &mut events);
                     graphics_resources.model.animate(Instant::now().duration_since(graphics_resources.time_since_start).as_millis() as f32);
-                    let viewport = Viewport { x: 0, y: 0, width: window.inner_size().width / 2, height: window.inner_size().height / 2};
+                    let viewport = Viewport { x: 0, y: 0, width: window.inner_size().width, height: window.inner_size().height};
                     graphics_resources.camera.set_viewport(viewport);
                     RenderTarget::screen(&graphics_resources.context, viewport.width, viewport.height)
                         .clear(ClearState::color_and_depth(0.8, 0.8, 0.8, 1.0, 1.0))
@@ -125,6 +124,8 @@ fn app() -> Element {
         }
     }
 }
+
+#[component]
 pub fn StacksIcon() -> Element {
     rsx!(
         svg {
@@ -139,6 +140,8 @@ pub fn StacksIcon() -> Element {
         }
     )
 }
+
+#[component]
 pub fn RightArrowIcon() -> Element {
     rsx!(
         svg {
